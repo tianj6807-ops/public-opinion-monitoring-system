@@ -224,13 +224,20 @@ python app.py
 ## 📸 系统截图
 
 ### 总览看板
-![总览看板](screenshots/dashboard.png)
+<img width="1842" height="816" alt="a67eeb3486bfca7547daaaa3fdfd2e83" src="https://github.com/user-attachments/assets/9257106e-2a82-4011-a2b8-60b630d9d2ca" />
+<img width="2359" height="805" alt="a79ea08357fdf049e272dcd31fa75d63" src="https://github.com/user-attachments/assets/055f236c-7d34-4490-8204-7053b0dabe49" />
+<img width="2316" height="927" alt="059663494c72b507e44d8e2581cf99d1" src="https://github.com/user-attachments/assets/6294cfed-5cfe-444b-9120-8715b437b046" />
 
 ### 聚类分析
-![聚类分析](screenshots/cluster.png)
+<img width="2427" height="1200" alt="8714e90b761357f0cc99d14edef909eb" src="https://github.com/user-attachments/assets/8ccd7fb9-8077-4f18-a03a-52c2eb34e7dc" />
 
 ### 智能研判
-![智能研判](screenshots/predict.png)
+<img width="2352" height="953" alt="5954fa8621d8184d6e8bc3b14b2e1c36" src="https://github.com/user-attachments/assets/9a2a763b-3322-490e-975d-4d0ead4f3f77" />
+<img width="2304" height="976" alt="a4b36a056b631d9b5930f18e363d8172" src="https://github.com/user-attachments/assets/3b618f02-2978-4afe-90f5-0e83e20c3d56" />
+<img width="2462" height="996" alt="c783f6dbf6886a5c16d4bc99dde2f5ca" src="https://github.com/user-attachments/assets/4f2c8be1-3399-4115-8095-af99a62a8c87" />
+<img width="2379" height="800" alt="8b2b22838ad9731ce9a7e3b7be69ecf0" src="https://github.com/user-attachments/assets/4a866fc0-6196-493d-bc50-5c6de05298bb" />
+<img width="1970" height="1143" alt="4962925fc6f5c1504a1514e17639cee2" src="https://github.com/user-attachments/assets/17a1fef3-0b09-46c9-b3fe-ae7a1f4beee2" />
+<img width="1866" height="925" alt="a585c6e57c3bfa4f31baf5fbae6a4028" src="https://github.com/user-attachments/assets/fb2a1279-8916-4a94-99ce-20c6d8dd9487" />
 
 ---
 
