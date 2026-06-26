@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网络舆情监测系统 - 聚类分析</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(255,255,255,0.95);
+            padding: 20px 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo h1 { color: #667eea; font-size: 24px; }
+        .logo p { color: #666; font-size: 12px; }
+
+        .nav { display: flex; gap: 20px; }
+        .nav a {
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            transition: all 0.3s;
+            color: #333;
+        }
+        .nav a.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .nav a:hover:not(.active) { background: #f0f0f0; }
+
+        .container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .cluster-viz {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .cluster-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .scatter-container {
+            height: 500px;
+        }
+
+        .cluster-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .cluster-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .cluster-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .cluster-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .cluster-tag {
+            font-size: 18px;
+            font-weight: bold;
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        .tag-positive { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+        .tag-negative { background: #fff2f0; color: #f5222d; border: 1px solid #ffccc7; }
+        .tag-neutral { background: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; }
+
+        .cluster-stats {
+            margin-bottom: 15px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .keywords {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .keyword {
+            background: #f5f5f5;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+        }
+
+        .sample-text {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: white;
+            background: rgba(0,0,0,0.3);
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <h1>🔍 网络舆情监测系统</h1>
+            <p>基于多模型融合的智能舆情分析平台</p>
+        </div>
+        <div class="nav">
+            <a href="/">总览看板</a>
+            <a href="/cluster" class="active">聚类分析</a>
+            <a href="/predict">智能研判</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="cluster-viz">
+            <div class="cluster-title">📊 观点群体分布图（PCA降维可视化）</div>
+            <div id="scatterChart" class="scatter-container"></div>
+            <p style="margin-top: 15px; color: #666; font-size: 12px;">
+                💡 提示：鼠标悬停可查看原文内容，不同颜色代表不同的观点群体簇
+            </p>
+        </div>
+
+        <div class="cluster-title">🏷️ 观点群体详情</div>
+        <div id="clusterGrid" class="cluster-grid"></div>
+    </div>
+
+    <div class="footer">
+        <p>绵阳师范学院计算机与网络安全学院 | 网络舆情监测课程设计 | K-Means聚类分析</p>
+    </div>
+
+    <script>
+        let scatterChart;
+
+        function getTagClass(sentiment) {
+            if (sentiment === '正面') return 'tag-positive';
+            if (sentiment === '负面') return 'tag-negative';
+            return 'tag-neutral';
+        }
+
+        function getSentimentIcon(sentiment) {
+            if (sentiment === '正面') return '😊';
+            if (sentiment === '负面') return '😞';
+            return '😐';
+        }
+
+        function loadClusterData() {
+            $.ajax({
+                url: '/api/cluster_data',
+                method: 'GET',
+                success: function(data) {
+                    updateScatterChart(data.visualization);
+                    updateClusterGrid(data.clusters);
+                },
+                error: function(xhr) {
+                    console.error('加载聚类数据失败:', xhr);
+                }
+            });
+        }
+
+        function updateScatterChart(visData) {
+            if (scatterChart) {
+                scatterChart.dispose();
+            }
+            scatterChart = echarts.init(document.getElementById('scatterChart'));
+
+            // 按簇分组数据
+            const seriesData = {};
+            for (let i = 0; i < visData.points.length; i++) {
+                const label = visData.labels[i];
+                if (!seriesData[label]) {
+                    seriesData[label] = [];
+                }
+                seriesData[label].push({
+                    value: visData.points[i],
+                    name: visData.texts[i]
+                });
+            }
+
+            // 生成颜色
+            const colors = ['#5470c6', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'];
+
+            const series = [];
+            for (const [label, points] of Object.entries(seriesData)) {
+                series.push({
+                    name: `观点组 ${parseInt(label) + 1}`,
+                    type: 'scatter',
+                    data: points,
+                    symbolSize: 10,
+                    itemStyle: { color: colors[parseInt(label) % colors.length] },
+                    emphasis: { scale: true }
+                });
+            }
+
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        return `<div style="max-width: 300px;"><strong>${params.seriesName}</strong><br/>${params.data.name}</div>`;
+                    }
+                },
+                legend: { data: series.map(s => s.name), left: 'left' },
+                xAxis: { type: 'value', name: 'PCA维度1', nameLocation: 'middle', nameGap: 30 },
+                yAxis: { type: 'value', name: 'PCA维度2', nameLocation: 'middle', nameGap: 30 },
+                series: series
+            };
+            scatterChart.setOption(option);
+        }
+
+        function updateClusterGrid(clusters) {
+            const grid = $('#clusterGrid');
+            grid.empty();
+
+            clusters.forEach(cluster => {
+                const tagClass = getTagClass(cluster.dominant_sentiment);
+                const sentimentIcon = getSentimentIcon(cluster.dominant_sentiment);
+
+                const keywordsHtml = cluster.keywords.slice(0, 8).map(kw =>
+                    `<span class="keyword">${kw.word} (${(kw.weight * 100).toFixed(1)}%)</span>`
+                ).join('');
+
+                const sentimentDistHtml = Object.entries(cluster.sentiment_distribution).map(([sent, count]) =>
+                    `<span class="keyword" style="background: ${sent === '正面' ? '#f6ffed' : sent === '负面' ? '#fff2f0' : '#e6f7ff'}">
+                        ${getSentimentIcon(sent)} ${sent}: ${count}
+                    </span>`
+                ).join('');
+
+                const card = `
+                    <div class="cluster-card">
+                        <div class="cluster-header">
+                            <span class="cluster-tag ${tagClass}">${sentimentIcon} ${cluster.tag}</span>
+                            <span style="color: #666;">规模: ${cluster.size} (${cluster.percentage.toFixed(1)}%)</span>
+                        </div>
+                        <div class="cluster-stats">
+                            <div class="stat-row">
+                                <span>📊 主导情感:</span>
+                                <span style="font-weight: bold; color: ${cluster.dominant_sentiment === '正面' ? '#52c41a' : cluster.dominant_sentiment === '负面' ? '#f5222d' : '#1890ff'}">
+                                    ${cluster.dominant_sentiment}
+                                </span>
+                            </div>
+                            <div class="stat-row">
+                                <span>🎯 情感分布:</span>
+                                <div>${sentimentDistHtml}</div>
+                            </div>
+                        </div>
+                        <div class="stat-row">
+                            <span>🔑 关键词:</span>
+                        </div>
+                        <div class="keywords">${keywordsHtml}</div>
+                        <div class="sample-text">
+                            <strong>📝 示例文本:</strong><br/>
+                            ${cluster.sample_texts.map(text => `&nbsp;&nbsp;• ${text.substring(0, 80)}${text.length > 80 ? '...' : ''}<br/>`).join('')}
+                        </div>
+                    </div>
+                `;
+                grid.append(card);
+            });
+        }
+
+        // 初始化加载
+        $(document).ready(function() {
+            loadClusterData();
+        });
+    </script>
+</body>
+</html>

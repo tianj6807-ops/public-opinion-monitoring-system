@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网络舆情监测系统 - 智能研判</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(255,255,255,0.95);
+            padding: 20px 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo h1 { color: #667eea; font-size: 24px; }
+        .logo p { color: #666; font-size: 12px; }
+
+        .nav { display: flex; gap: 20px; }
+        .nav a {
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            transition: all 0.3s;
+            color: #333;
+        }
+        .nav a.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .nav a:hover:not(.active) { background: #f0f0f0; }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .predict-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .text-input {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            resize: vertical;
+            transition: all 0.3s;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102,126,234,0.3);
+        }
+
+        .btn-predict {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+
+        .btn-predict:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(102,126,234,0.4);
+        }
+
+        .result-container {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+
+        .result-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .sentiment-result {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .sentiment-badge {
+            font-size: 48px;
+            padding: 20px 40px;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .sentiment-positive { background: #f6ffed; color: #52c41a; border: 2px solid #b7eb8f; }
+        .sentiment-negative { background: #fff2f0; color: #f5222d; border: 2px solid #ffccc7; }
+        .sentiment-neutral { background: #e6f7ff; color: #1890ff; border: 2px solid #91d5ff; }
+
+        .confidence {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .model-votes {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .vote-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .vote-item:last-child { border-bottom: none; }
+
+        .vote-positive { color: #52c41a; font-weight: bold; }
+        .vote-negative { color: #f5222d; font-weight: bold; }
+        .vote-neutral { color: #1890ff; font-weight: bold; }
+
+        .probability-bar {
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .bar {
+            display: inline-block;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+            color: white;
+            font-size: 12px;
+        }
+
+        .bar-positive { background: #52c41a; }
+        .bar-neutral { background: #1890ff; }
+        .bar-negative { background: #f5222d; }
+
+        .batch-section {
+            margin-top: 30px;
+        }
+
+        .batch-btn {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+
+        .accuracy-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .batch-results {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .batch-item {
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: white;
+            background: rgba(0,0,0,0.3);
+            margin-top: 40px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .loading {
+            animation: pulse 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <h1>🤖 网络舆情监测系统</h1>
+            <p>基于多模型融合的智能舆情分析平台</p>
+        </div>
+        <div class="nav">
+            <a href="/">总览看板</a>
+            <a href="/cluster">聚类分析</a>
+            <a href="/predict" class="active">智能研判</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="predict-card">
+            <div class="section-title">🔮 单条文本情感研判</div>
+            <textarea id="inputText" class="text-input" placeholder="请输入需要研判的舆情文本...&#10;例如：这个产品真的太棒了，使用体验非常好，强烈推荐给大家！"></textarea>
+            <div>
+                <button class="btn-predict" onclick="predictSingle()">🎯 开始研判</button>
+                <button class="btn-predict" onclick="clearInput()" style="background: #999;">🗑️ 清空</button>
+            </div>
+
+            <div id="singleResult" style="display: none;" class="result-container">
+                <div class="result-header">📊 多模型融合研判结果</div>
+                <div id="sentimentDisplay"></div>
+            </div>
+        </div>
+
+        <div class="predict-card">
+            <div class="section-title">📊 批量评估（模型准确率测试）</div>
+            <div>
+                <button class="batch-btn" onclick="batchPredict()">🚀 开始批量评估</button>
+                <span id="batchInfo" style="margin-left: 15px; color: #666;"></span>
+            </div>
+            <div id="batchResult" style="display: none; margin-top: 20px;">
+                <div id="accuracyDisplay" class="accuracy-display"></div>
+                <div id="batchResultsList" class="batch-results"></div>
+            </div>
+        </div>
+
+        <div class="predict-card">
+            <div class="section-title">💡 使用说明</div>
+            <div style="line-height: 1.8; color: #666;">
+                <p>1. <strong>多模型融合投票机制</strong>：系统集成了朴素贝叶斯、TextCNN和BERT三个模型，通过投票集成得出最终研判结论。</p>
+                <p>2. <strong>兜底策略</strong>：当三个模型结果各不相同时，系统会自动选择置信度最高的模型结果作为最终输出。</p>
+                <p>3. <strong>置信度计算</strong>：置信度 = 得票数 / 3，值越高表示模型间一致性越好。</p>
+                <p>4. <strong>批量评估</strong>：系统会随机抽取100条已标注数据进行测试，计算融合模型的整体准确率。</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>绵阳师范学院计算机与网络安全学院 | 网络舆情监测课程设计 | 朴素贝叶斯 + TextCNN + BERT 多模型融合</p>
+    </div>
+
+    <script>
+        function predictSingle() {
+            const text = $('#inputText').val().trim();
+            if (!text) {
+                alert('请输入需要研判的文本内容');
+                return;
+            }
+
+            $('#singleResult').hide();
+            $('.btn-predict').addClass('loading');
+
+            $.ajax({
+                url: '/api/predict',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ text: text }),
+                success: function(data) {
+                    displayResult(data.prediction);
+                },
+                error: function(xhr) {
+                    alert('研判失败：' + (xhr.responseJSON?.error || '未知错误'));
+                },
+                complete: function() {
+                    $('.btn-predict').removeClass('loading');
+                }
+            });
+        }
+
+        function displayResult(prediction) {
+            const sentiment = prediction.sentiment;
+            let sentimentClass = '';
+            let sentimentIcon = '';
+
+            switch(sentiment) {
+                case '正面':
+                    sentimentClass = 'sentiment-positive';
+                    sentimentIcon = '😊';
+                    break;
+                case '负面':
+                    sentimentClass = 'sentiment-negative';
+                    sentimentIcon = '😞';
+                    break;
+                default:
+                    sentimentClass = 'sentiment-neutral';
+                    sentimentIcon = '😐';
+            }
+
+            // 构建投票详情
+            let votesHtml = '<div class="model-votes"><strong>🗳️ 各模型投票详情</strong>';
+            for (const [model, vote] of Object.entries(prediction.votes)) {
+                let voteClass = '';
+                if (vote === '正面') voteClass = 'vote-positive';
+                else if (vote === '负面') voteClass = 'vote-negative';
+                else voteClass = 'vote-neutral';
+                votesHtml += `<div class="vote-item">
+                    <span>${model}</span>
+                    <span class="${voteClass}">${vote}</span>
+                </div>`;
+            }
+            votesHtml += '</div>';
+
+            // 构建概率条
+            const probs = prediction.average_probabilities;
+            const totalWidth = 100;
+            const positiveWidth = (probs['正面'] * totalWidth).toFixed(1);
+            const neutralWidth = (probs['中性'] * totalWidth).toFixed(1);
+            const negativeWidth = (probs['负面'] * totalWidth).toFixed(1);
+
+            const probabilityHtml = `
+                <div style="margin-top: 15px;">
+                    <strong>📈 平均概率分布</strong>
+                    <div class="probability-bar">
+                        <span class="bar bar-positive" style="width: ${positiveWidth}%">${(probs['正面']*100).toFixed(1)}%</span>
+                        <span class="bar bar-neutral" style="width: ${neutralWidth}%">${(probs['中性']*100).toFixed(1)}%</span>
+                        <span class="bar bar-negative" style="width: ${negativeWidth}%">${(probs['负面']*100).toFixed(1)}%</span>
+                    </div>
+                </div>
+            `;
+
+            const html = `
+                <div class="sentiment-result">
+                    <div class="sentiment-badge ${sentimentClass}">
+                        ${sentimentIcon} ${sentiment}
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; font-weight: bold;">置信度: ${(prediction.confidence * 100).toFixed(1)}%</div>
+                        <div class="confidence">${prediction.vote_count[sentiment] || 0}/3 个模型达成一致</div>
+                    </div>
+                </div>
+                ${votesHtml}
+                ${probabilityHtml}
+            `;
+
+            $('#sentimentDisplay').html(html);
+            $('#singleResult').show();
+        }
+
+        function batchPredict() {
+            $('#batchResult').hide();
+            $('#batchInfo').text('评估中...');
+
+            $.ajax({
+                url: '/api/batch_predict',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ sample_size: 100 }),
+                success: function(data) {
+                    displayBatchResults(data);
+                },
+                error: function(xhr) {
+                    alert('批量评估失败：' + (xhr.responseJSON?.error || '未知错误'));
+                },
+                complete: function() {
+                    $('#batchInfo').text('');
+                }
+            });
+        }
+
+        function displayBatchResults(data) {
+            const accuracy = (data.accuracy * 100).toFixed(2);
+            let accuracyColor = '';
+            if (data.accuracy >= 0.8) accuracyColor = '#52c41a';
+            else if (data.accuracy >= 0.6) accuracyColor = '#faad14';
+            else accuracyColor = '#f5222d';
+
+            $('#accuracyDisplay').html(`
+                <div style="font-size: 36px; font-weight: bold;">${accuracy}%</div>
+                <div>融合模型准确率（基于${data.total}条测试数据）</div>
+                <div style="font-size: 14px; margin-top: 10px;">✅ 正确数: ${Math.round(data.accuracy * data.total)} / ${data.total}</div>
+            `);
+
+            let resultsHtml = '';
+            for (const item of data.results) {
+                let statusIcon = '';
+                let statusClass = '';
+                if (item.true_sentiment === item.predicted_sentiment) {
+                    statusIcon = '✅';
+                    statusClass = 'vote-positive';
+                } else {
+                    statusIcon = '❌';
+                    statusClass = 'vote-negative';
+                }
+
+                resultsHtml += `
+                    <div class="batch-item">
+                        <div style="flex: 1;">${item.text}</div>
+                        <div style="text-align: center; width: 80px;">
+                            <span class="${statusClass}">${item.predicted_sentiment}</span>
+                        </div>
+                        <div style="text-align: center; width: 60px;">${statusIcon}</div>
+                    </div>
+                `;
+            }
+
+            $('#batchResultsList').html(resultsHtml);
+            $('#batchResult').show();
+        }
+
+        function clearInput() {
+            $('#inputText').val('');
+            $('#singleResult').hide();
+        }
+    </script>
+</body>
+</html>
