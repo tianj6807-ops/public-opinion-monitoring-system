@@ -1,4 +1,3 @@
-<img width="588" height="943" alt="d43e8eff2efc0c8f0a944540e786dcf5" src="https://github.com/user-attachments/assets/75772413-b955-4224-b723-d620032e6aa7" />```markdown
 # 📊 网络舆情监测系统
 
 > 基于 Flask + 朴素贝叶斯 + TextCNN + BERT 的多模型融合网络舆情监测 Web 系统
@@ -107,8 +106,6 @@ public-opinion-monitoring-system/
 ├── train_models_with_bert_full.py        # 完整训练脚本 ⭐
 ├── requirements.txt                      # Python 依赖清单
 └── README.md                             # 项目说明文档
-```
----
 
 ## 🚀 快速启动
 
